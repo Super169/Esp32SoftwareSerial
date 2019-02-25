@@ -1,0 +1,33 @@
+#######################################
+# Syntax Coloring Map for SoftwareSerial
+# (esp32)
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+SoftwareSerial	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+begin	KEYWORD2
+read	KEYWORD2
+write	KEYWORD2
+available	KEYWORD2
+flush	KEYWORD2
+peek	KEYWORD2
+end	KEYWORD2
+baudRate	KEYWORD2
+listen	KEYWORD2
+end	KEYWORD2
+isListening	KEYWORD2
+stopListening	KEYWORD2
+setTransmitEnablePin	KEYWORD2
+overflow	KEYWORD2
+#######################################
+# Constants (LITERAL1)
+#######################################
+SW_SERIAL_UNUSED_PIN	LITERAL1
