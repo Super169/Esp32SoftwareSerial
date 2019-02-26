@@ -28,6 +28,8 @@ Adjusted for ESP32 December 2018 paulvha
 #include <inttypes.h>
 #include <Stream.h>
 
+#define SS_DEBUG
+
 // This class is compatible with the corresponding AVR one,
 // the constructor however has an optional rx buffer size.
 
@@ -61,6 +63,8 @@ public:
    // read from pin based on interrupt
    void rxRead();
 
+   // One wire control
+   void enableTx(bool on);
 
 private:
    bool isValidGPIOpin(int pin);
@@ -69,6 +73,7 @@ private:
    void enableRx(bool on);
 
    // Member variables
+   bool m_oneWire;
    int m_rxPin, m_txPin, m_txEnablePin;
    bool m_rxValid, m_rxEnabled;
    bool m_txValid, m_txEnableValid;

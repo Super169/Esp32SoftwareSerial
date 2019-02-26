@@ -115,6 +115,7 @@ static void (*ISRList[MAX_PIN+1])() = {
 };
 
 SoftwareSerial::SoftwareSerial(int receivePin, int transmitPin, bool inverse_logic, unsigned int buffSize) {
+   m_oneWire = (receivePin == transmitPin);
    m_rxValid = m_txValid = m_txEnableValid = false;
    m_buffer = NULL;
    m_invert = inverse_logic;
@@ -136,9 +137,10 @@ SoftwareSerial::SoftwareSerial(int receivePin, int transmitPin, bool inverse_log
    if (isValidGPIOpin(transmitPin)) {
       m_txValid = true;
       m_txPin = transmitPin;
-      pinMode(m_txPin, OUTPUT);
-      digitalWrite(m_txPin, !m_invert);
-
+      if (!m_oneWire) {
+         pinMode(m_txPin, OUTPUT);
+         digitalWrite(m_txPin, !m_invert);
+      }
    }
 }
 
@@ -183,6 +185,23 @@ void SoftwareSerial::setTransmitEnablePin(int transmitEnablePin) {
   }
 }
 
+/* For one wire communization */
+void SoftwareSerial::enableTx(bool on) {
+  if (m_oneWire && m_txValid) {
+    if (on) {
+      enableRx(false);
+      digitalWrite(m_txPin, !m_invert);
+      pinMode(m_rxPin, OUTPUT);
+    } else {
+      digitalWrite(m_txPin, !m_invert);
+      pinMode(m_rxPin, INPUT);
+      enableRx(true);
+    }
+    delay(1); // it's important to have a delay after switching
+  }
+}
+
+
 /* attach interrupt to the RX pin */
 void SoftwareSerial::enableRx(bool on) {
    if (m_rxValid) {
@@ -197,6 +216,7 @@ void SoftwareSerial::enableRx(bool on) {
       m_rxEnabled = on;
    }
 }
+
 
 /* read and remove byte from RX-buffer */
 int SoftwareSerial::read() {
