@@ -205,15 +205,19 @@ void SoftwareSerial::enableTx(bool on) {
 /* attach interrupt to the RX pin */
 void SoftwareSerial::enableRx(bool on) {
    if (m_rxValid) {
-
-      if (on)
-        // m_rxPin = receive pin to use, ISRList = user function to call, NO argurment,
-        // rising in case of invert else falling (this is nearly always the case)
-         attachInterrupt(m_rxPin, ISRList[m_rxPin], m_invert ? RISING : FALLING);       // esp32-hal-gpio.c
-      else
-         detachInterrupt(m_rxPin);
-
-      m_rxEnabled = on;
+      if (on) {
+         if (!m_rxEnabled) {
+            // m_rxPin = receive pin to use, ISRList = user function to call, NO argurment,
+            // rising in case of invert else falling (this is nearly always the case)
+            attachInterrupt(m_rxPin, ISRList[m_rxPin], m_invert ? RISING : FALLING);       // esp32-hal-gpio.c
+            m_rxEnabled = on;
+        }
+      } else {
+         if (m_rxEnabled) {
+            detachInterrupt(m_rxPin);
+            m_rxEnabled = false;
+         }
+      }
    }
 }
 

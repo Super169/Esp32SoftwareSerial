@@ -22,6 +22,18 @@ Adjusted for ESP32 December 2018 paulvha
 * See README for changes applied
 */
 
+/*
+**** Note ****
+
+As EspClass::getCycleCount() will be called within the interrupt, 
+it's highly recommended to add IRAM_ATTR for this method to make sure 
+the object is loaded into RAM instead of flash. So you have to modify the ESP.cpp 
+in .platformio\packages\framework-arduinoespressif32\cores\esp32 folder.
+ 
+(refer to https://github.com/paulvha/ESP32/tree/master/softserial)
+
+*/
+
 #ifndef SoftwareSerial_h
 #define SoftwareSerial_h
 

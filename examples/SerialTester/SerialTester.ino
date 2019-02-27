@@ -19,80 +19,30 @@ struct {
     unsigned long baud      = 115200;
     bool inverse_logic      = false;
     uint16_t buffer_size    = 256;
+    bool one_wire           = false;
+    uint8_t mode            = 0;
 } busConfig;
 
-// SoftwareSerial swSer(busConfig.rx_pin , busConfig.tx_pin, busConfig.inverse_logic, busConfig.buffer_size);
+/*
+  Default pin assignment:
+    |  Serial1   |  Rx:  4  |  Tx:  2  |
+    |  Serial2   |  Rx: 16  |  Tx: 17  |
+    |  Software  |  Rx: 13  |  Tx: 12  |
+*/
+
 SoftwareSerial *swSer;
 Stream *port;
-int mode = 1;
 
+String port_name, fx_name;
 
 void setup() {
   Serial.begin(115200);
-  // Serial1.begin(115200,SERIAL_8N1, 4, 2);     //Baud rate, parity mode, RX, TX
-  // Serial2.begin(115200,SERIAL_8N1, 16, 17);
   ClearSerialBuffer();
-  int defRxPin, defTxPin;
-
 
   Serial.printf("\n\nSerial Tester\n\n");
-  char sType = waitForChar("Select serial port {Software Serial}: \n  1 - Serial1, 2 - Serial2, S - Software Serial\n",
-                             "12Ss ");
-  Serial.printf("\n");
-  String sPort;
-  switch (sType) {
-    case '1':
-      sPort = "Hardware Serial1";
-      busConfig.serialType = 1;
-      defRxPin = 4;
-      defTxPin = 2;
-      break;
-    case '2':
-      sPort = "Hardware Serial2";
-      busConfig.serialType = 2;
-      defRxPin = 16;
-      defTxPin = 17;
-      break;
-    case 'S':
-    case 's':
-    case ' ':
-    default:      
-      defRxPin = 13;
-      defTxPin = 12;
-      sPort = "Software Serial";
-      busConfig.serialType = 255;
-      break;
-  }
-  Serial.printf("%s will be used", sPort.c_str());
-  String msg;
+  while (!GetConfig()) delay(1);
 
-  msg = "\n  Rx GPIO Pin {" + String(defRxPin) + "}: ";
-  busConfig.rx_pin = waitForNumber(msg, 1, 35, defRxPin);
-  Serial.printf("%d", busConfig.rx_pin);
-
-  msg = "\n  Tx GPIO Pin {" + String(defTxPin) + "}: ";
-  busConfig.tx_pin = waitForNumber(msg, 1, 35, defTxPin);
-  Serial.printf("%d", busConfig.tx_pin);
-
-  busConfig.baud = waitForNumber("\n  Baud {115200}: ", 9600, 115200, 115200);
-  Serial.printf("%ld\n", busConfig.baud);
-
-  char action = waitForChar("Please select function {1}:\n  1 - Serial communization\n  2 - Echo reply\n",
-                             "12 ");
-  String fx = "";
-  switch (action) {
-    case '2':
-      mode = 2;
-      fx = "Echo reply";
-      break;
-
-    default:
-      mode = 1;
-      fx = "Serial communization";
-      break;
-  }
-
-  Serial.printf("\n\n\n%s on %s\n", fx.c_str(), sPort.c_str());
+  Serial.printf("\n\n\n%s on %s\n", fx_name.c_str(), port_name.c_str());
   Serial.printf("  Rx: GPIO-%d\n  Tx: GPIO-%d\n  Baud : %ld\n\n", busConfig.rx_pin, busConfig.tx_pin, busConfig.baud);
 
   switch (busConfig.serialType) {
@@ -112,12 +62,11 @@ void setup() {
       port = swSer;
       break;
   }
-
-
 }
 
+
 void loop() {
-  switch (mode)
+  switch (busConfig.mode)
   {
     case 1:
       SerialSCommunization();
@@ -126,6 +75,73 @@ void loop() {
       EchoReply();
       break;
   }
+}
+
+
+bool GetConfig() {
+  int defRxPin, defTxPin;
+
+  ClearSerialBuffer();
+  char sType = waitForChar("Select serial port {Software Serial}: \n  1 - Serial1, 2 - Serial2, S - Software Serial\n",
+                             "12Ss ");
+  Serial.printf("\n");
+  switch (sType) {
+    case '1':
+      port_name = "Hardware Serial1";
+      busConfig.serialType = 1;
+      defRxPin = 4;
+      defTxPin = 2;
+      break;
+    case '2':
+      port_name = "Hardware Serial2";
+      busConfig.serialType = 2;
+      defRxPin = 16;
+      defTxPin = 17;
+      break;
+    case 'S':
+    case 's':
+    case ' ':
+    default:      
+      defRxPin = 13;
+      defTxPin = 12;
+      port_name = "Software Serial";
+      busConfig.serialType = 255;
+      break;
+  }
+  Serial.printf("%s will be used", port_name.c_str());
+  String msg;
+
+  msg = "\n  Rx GPIO Pin {" + String(defRxPin) + "}: ";
+  busConfig.rx_pin = waitForNumber(msg, 1, 35, defRxPin);
+  Serial.printf("%d", busConfig.rx_pin);
+
+  msg = "\n  Tx GPIO Pin {" + String(defTxPin) + "}: ";
+  busConfig.tx_pin = waitForNumber(msg, 1, 35, defTxPin);
+  Serial.printf("%d", busConfig.tx_pin);
+
+  busConfig.one_wire = (busConfig.rx_pin == busConfig.tx_pin);
+  if (busConfig.one_wire && (busConfig.serialType != 255)) {
+    Serial.printf("\n\n### One wire serial connection is not supported by hardware serial.\n\n");
+    return false;
+  }
+
+  busConfig.baud = waitForNumber("\n  Baud {115200}: ", 9600, 115200, 115200);
+  Serial.printf("%ld\n", busConfig.baud);
+
+  char action = waitForChar("Please select function {1}:\n  1 - Serial communization\n  2 - Echo reply\n",
+                             "12 ");
+  switch (action) {
+    case '2':
+      busConfig.mode = 2;
+      fx_name = "Echo reply";
+      break;
+
+    default:
+      busConfig.mode = 1;
+      fx_name = "Serial communization";
+      break;
+  }
+  return true;
 }
 
 void ClearSerialBuffer() {
@@ -241,7 +257,11 @@ void SerialSCommunization() {
       if (!Serial.available()) delay(1);  // add 1ms delay to make sure completed
     }
     Serial.printf("%08ld >> %s\n", ms, data.c_str());
+
+    // One wire only available for software serial, must enableTx before send
+    if (busConfig.one_wire) swSer->enableTx(true);
     port->printf("%s\n", data.c_str());
+    if (busConfig.one_wire) swSer->enableTx(false);
   }
 
   if (port->available()) {
@@ -265,6 +285,10 @@ void EchoReply() {
       if (!port->available()) delay(1);
     }
     Serial.printf("%08ld << %s\n", ms, data.c_str());
+   
+    // One wire only available for software serial, must enableTx before send
+    if (busConfig.one_wire) swSer->enableTx(true);
     port->printf("%08ld << %s\n", ms, data.c_str());
+    if (busConfig.one_wire) swSer->enableTx(false);
   }
 }
