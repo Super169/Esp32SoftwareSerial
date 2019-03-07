@@ -164,8 +164,7 @@ void SoftwareSerial::begin(long speed) {
    // By default enable interrupt during tx only for low speed
    m_intTxEnabled = speed < 9600;
 
-   if (!m_rxEnabled)
-     enableRx(true);
+   enableRx(true);
 }
 
 /* get baudrate that is set for softSerial */
